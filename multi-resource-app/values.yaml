@@ -1,0 +1,20 @@
+# Default values for multi-resource-app
+replicaCount: 1
+
+image:
+  repository: "nginx"
+  tag: "latest"
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "appdb"
+
+logging:
+  level: "INFO"
+
+features:
+  newFeature: true
+
+postgresql:
+  enabled: true

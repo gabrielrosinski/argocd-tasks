@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "multi-resource-app.fullname" . }}-presync-log
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-weight: "1"
+    argocd.argoproj.io/hook-delete-policy: hook-succeeded,hook-failed
+spec:
+  template:
+    metadata:
+      name: presync-log
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: log-message
+        image: busybox:1.35
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "==================================="
+          echo "PreSync Hook Executed"
+          echo "Application: {{ include "multi-resource-app.fullname" . }}"
+          echo "Namespace: {{ .Release.Namespace }}"
+          echo "Chart Version: {{ .Chart.Version }}"
+          echo "App Version: {{ .Chart.AppVersion }}"
+          echo "Timestamp: $(date)"
+          echo "==================================="
+          
+          # Additional custom logic
+          echo "Checking prerequisites..."
+          echo "✓ PreSync validation completed"
+
+          

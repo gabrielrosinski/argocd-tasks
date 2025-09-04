@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "multi-resource-app.fullname" . }}
+  labels:
+    {{- include "multi-resource-app.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "multi-resource-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      # Force pod restart when ConfigMap changes
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "multi-resource-app.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "multi-resource-app.fullname" . }}-config
+              key: database.properties
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        # Wait for database to be ready
+        initContainers:
+        - name: wait-for-db
+          image: busybox:1.35
+          command: ['sh', '-c', 'until nc -z {{ .Values.database.host }} {{ .Values.database.port }}; do sleep 2; done']
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ include "multi-resource-app.fullname" . }}-config
